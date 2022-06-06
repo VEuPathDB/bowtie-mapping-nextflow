@@ -10,7 +10,8 @@ RUN apt-get -qq update --fix-missing
 RUN apt-get install -y \
   wget \
   perl \
-  bowtie2 \ 
+  bowtie2 \
+  bowtie \
   samtools \
   bedtools
 
