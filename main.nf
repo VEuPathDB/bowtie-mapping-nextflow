@@ -25,7 +25,7 @@ process blastSimilarity {
    """
 }
 
-bamResults = bam_qch.collectFile(storeDir: params.outputDir, name: params.bamFile)
+bamResults = bam_qch.collectFile(storeDir: params.outputDir)
 logResults = log_qch.collectFile(storeDir: params.outputDir, name: params.logFile)
 samResults = sam_qch.collectFile(storeDir: params.outputDir, name: params.samFile)
 
