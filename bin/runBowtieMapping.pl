@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+use Utils;
 use strict;
 use Getopt::Long;
 
@@ -14,14 +15,14 @@ my $workingDir = ".";
             "sampleName|s=s" => \$sampleName,
             "workingDir|w=s" => \$workingDir,
             "extraBowtieParams|e:s" => \$extraBowtieParams,
-            "deleteIntermediateFiles!" => \$delIntFiles,
-            "isColorspace!" => \$isColorspace,
-            "removePCRDuplicates!" => \$removePCRDuplicates,
+            "deleteIntermediateFiles:s" => \$delIntFiles,
+            "isColorspace:s" => \$isColorspace,
+            "removePCRDuplicates:s" => \$removePCRDuplicates,
             );
 
 die "mateA file not found\n".&getParams() unless -e "$mateA";
 die "mateB file not found\n".&getParams() if ($mateB && !-e "$mateB");
-die "bowtie index must be specified\n".&getParams() unless (-e "$bowtieIndex.1.bt2" || ($isColorspace && -e "$bowtieIndex.1.ebwt")); 
+die "bowtie index must be specified\n".&getParams() unless (-e "$bowtieIndex.1.bt2" || ($isColorspace eq "true" && -e "$bowtieIndex.1.ebwt")); 
 die "you must provide a sample name\n".&getParams() unless $sampleName;
 ##should add in usage
 $bowtie2 = $bowtie2 eq 'default' ? 'bowtie2' : $bowtie2;  ##if not specified then bowtie2 must be in path.
@@ -44,16 +45,16 @@ my $cmd;
 
 
 ### aligning with bowtie 1 if colorspace
-if($isColorspace && -e "$bowtieIndex.1.ebwt"){  
+if($isColorspace eq "true" && -e "$bowtieIndex.1.ebwt"){  
   die "if isColorspace=true you must provide qual files that are named exactly like the reads files but with .qual appended to the read file name" unless -e "$mateA.qual";
   if(-e "$mateB"){  ## pairedEnd
     $cmd = "(bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' ";
     if ($extraBowtieParams) {$cmd = $cmd.$extraBowtieParams;}
-    $cmd = $cmd." $bowtieIndex -1 $mateA --Q1 $mateA.qual -2 $mateB --Q2 $mateB.qual > $workingDir/$tmpOut.sam) >& $workingDir/$tmpOut.bowtie.log"; 
+    $cmd = $cmd." $bowtieIndex -1 $mateA --Q1 $mateA.qual -2 $mateB --Q2 $mateB.qual > $workingDir/$tmpOut.sam) > $workingDir/$tmpOut.bowtie.log"; 
   }else{  ##single end
     $cmd = "(bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' ";
     if ($extraBowtieParams) {$cmd = $cmd.$extraBowtieParams;}
-    $cmd = $cmd." $bowtieIndex $mateA -Q $mateA.qual > $workingDir/$tmpOut.sam) >& $workingDir/bowtie.log";
+    $cmd = $cmd." $bowtieIndex $mateA -Q $mateA.qual > $workingDir/$tmpOut.sam) > $workingDir/bowtie.log";
   }
   print L &getDate().": $cmd\n";
   if(-e "$workingDir/complete" || -e "$workingDir/$out.bam"){ print L "  succeeded in previous run\n\n";
@@ -63,7 +64,7 @@ if($isColorspace && -e "$bowtieIndex.1.ebwt"){
 }elsif( -e "$bowtieIndex.1.bt2"){  
   $cmd = "($bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' ";
   if ($extraBowtieParams){$cmd = $cmd.$extraBowtieParams;}
-  $cmd = $cmd." -x $bowtieIndex ".(-e "$mateB" ? "-1 $mateA -2 $mateB " : "-U $mateA ")."-S $workingDir/$tmpOut.sam) >& $workingDir/bowtie.log";
+  $cmd = $cmd." -x $bowtieIndex ".(-e "$mateB" ? "-1 $mateA -2 $mateB " : "-U $mateA ")."-S $workingDir/$tmpOut.sam) > $workingDir/bowtie.log";
   
   print L &getDate().": $cmd\n";
   if(-e "$workingDir/complete" || -e "$workingDir/$out.bam"){ print L "  succeeded in previous run\n\n";
@@ -73,13 +74,13 @@ if($isColorspace && -e "$bowtieIndex.1.ebwt"){
 }
 
 # Convert to bam and sort
-$cmd = "(samtools view -buS $workingDir/$tmpOut.sam | samtools sort -o $workingDir/$tmpOut.bam) >& $workingDir/$tmpOut.samtools_view.err";
+$cmd = "(samtools view -buS $workingDir/$tmpOut.sam | samtools sort -o $workingDir/$tmpOut.bam) > $workingDir/$tmpOut.samtools_view.err";
 print L &getDate().": $cmd\n";
 if (-e "$workingDir/$out.bam"){print L " succeeded in previous run\n\n";
 }else{ &runCmd($cmd); print L "\n"; }
 
 # Remove PCR duplicates if flagged
-if ($removePCRDuplicates) {
+if ($removePCRDuplicates eq "true") {
     if (-e "$mateB"){ #paired end
         $cmd = "samtools rmdup $workingDir/$tmpOut.bam $workingDir/$out.bam";
     }else{ #single end
@@ -101,7 +102,7 @@ if ($removePCRDuplicates) {
 ##should cleanup unneeded files before exiting so don't transfer too much back
 ## can delete all $tmpOut* and .err files for starters.
 
-if($delIntFiles){
+if($delIntFiles eq "true"){
   print L "deleting extra files\n";
   system("/bin/rm $workingDir/$tmpOut.*");
   system("/bin/rm $workingDir/*.err");

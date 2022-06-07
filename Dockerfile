@@ -20,3 +20,5 @@ COPY /bin/* /usr/bin/
 RUN chmod +x *
 
 WORKDIR /work
+
+ENV PERL5LIB=/usr/bin/
