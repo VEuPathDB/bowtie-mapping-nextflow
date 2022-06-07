@@ -4,7 +4,7 @@ use Utils;
 use strict;
 use Getopt::Long;
 
-my($mateA,$mateB,$sampleName,$delIntFiles,$bowtieIndex,$isColorspace,$removePCRDuplicates,$bowtie2,$extraBowtieParams);
+my($mateA,$mateB,$sampleName,$delIntFiles,$bowtieIndex,$isColorspace,$removePCRDuplicates,$bowtie2,$extraBowtieParams,$singleEnd);
 my $workingDir = ".";
 
 &GetOptions( 
@@ -18,6 +18,7 @@ my $workingDir = ".";
             "deleteIntermediateFiles:s" => \$delIntFiles,
             "isColorspace:s" => \$isColorspace,
             "removePCRDuplicates:s" => \$removePCRDuplicates,
+            "singleEnd:s" => \$singleEnd
             );
 
 die "mateA file not found\n".&getParams() unless -e "$mateA";
@@ -47,13 +48,13 @@ my $cmd;
 ### aligning with bowtie 1 if colorspace
 if($isColorspace eq "true" && -e "$bowtieIndex.1.ebwt"){  
   die "if isColorspace=true you must provide qual files that are named exactly like the reads files but with .qual appended to the read file name" unless -e "$mateA.qual";
-  if(-e "$mateB"){  ## pairedEnd
+  if($singleEnd eq "false"){  ## pairedEnd
     $cmd = "(bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' ";
     if ($extraBowtieParams) {$cmd = $cmd.$extraBowtieParams;}
     $cmd = $cmd." $bowtieIndex -1 $mateA --Q1 $mateA.qual -2 $mateB --Q2 $mateB.qual > $workingDir/$tmpOut.sam) > $workingDir/$tmpOut.bowtie.log"; 
-  }else{  ##single end
-    $cmd = "(bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' ";
-    if ($extraBowtieParams) {$cmd = $cmd.$extraBowtieParams;}
+ }elsif($singleEnd eq "true") {  ##single end
+      $cmd = "(bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' ";
+      if ($extraBowtieParams) {$cmd = $cmd.$extraBowtieParams;}
     $cmd = $cmd." $bowtieIndex $mateA -Q $mateA.qual > $workingDir/$tmpOut.sam) > $workingDir/bowtie.log";
   }
   print L &getDate().": $cmd\n";
