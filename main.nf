@@ -1,8 +1,11 @@
 nextflow.enable.dsl=1
+
 mateA_qch = Channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
 mateB_qch = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
+
 db_vch = Channel.value()
-process createDatabase {
+
+process createIndex {
     output:
     path 'index.*' into db_vch
     """
@@ -10,7 +13,7 @@ process createDatabase {
     """
 }
 
-process blastSimilarity {
+process bowtieMapping {
    input:
    path 'mateA.fq' from mateA_qch
    path 'mateB.fq' from mateB_qch
