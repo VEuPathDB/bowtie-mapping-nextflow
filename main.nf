@@ -9,7 +9,7 @@ process createIndex {
 }
 
 process bowtieMappingPaired {
-   publishDir params.outputDir, mode: 'copy'
+   publishDir params.outputDir, mode: 'copy', saveAs: {filename -> filename.endsWith(".sam") ? params.samFile : filename.endsWith(".log") ? params.logFile : filename }
    input:
    path 'mateA.fq' 
    path 'mateB.fq'
