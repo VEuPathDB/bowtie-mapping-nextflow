@@ -50,20 +50,29 @@ process bowtieMappingSingle {
 }
 
 workflow {
-
-  db_vch = Channel.value()
-
+  if (params.preformattedDatabase == "false") {
   index_files = createIndex()
-
-  if(params.singleEnd == "false" ) {
-    mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-    mateB = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
-    bowtieMappingPaired(mateA, mateB, index_files)
-  }
-
-  if(params.singleEnd == "true" ) {
-    mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-    mateB = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-    bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
+    if(params.singleEnd == "false" ) {
+      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
+      mateB = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
+      bowtieMappingPaired(mateA, mateB, index_files)
+    }
+    if(params.singleEnd == "true" ) {
+      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
+      mateB = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
+      bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
+    }
+  } else if (params.preformattedDatabase == "true") {
+    index_files = file(params.databaseFileDir + "/*.bt2")
+    if(params.singleEnd == "false" ) {
+      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
+      mateB = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
+      bowtieMappingPaired(mateA, mateB, index_files)
+    }
+    if(params.singleEnd == "true" ) {
+      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
+      mateB = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
+      bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
+    }
   }
 }
