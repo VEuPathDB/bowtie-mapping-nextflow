@@ -1,77 +1,65 @@
 nextflow.enable.dsl=2
 
 process createIndex {
-
   output:
   path 'index.*'
-
   """
-  createIndex.pl --isColorspace $params.isColorspace --bowtieIndex $params.bowtieIndex --sampleName index
+  createIndex.pl --isColorspace $params.isColorspace --bowtieIndex $params.databaseFasta --sampleName index
   """
 }
 
-process bowtieMappingPaired {
+process bowtie {
   input:
-  path 'mateA.fq' 
-  path 'mateB.fq'
-  // Retaining names from the input into db_vch
   path indexfiles
-  
   output:
-  path 'runBowtieMapping.log' 
   path '*.bam'
-  path '*.sam' optional true
-
-  """
-  runBowtieMapping.pl --ma mateA.fq --mb mateB.fq --bowtie2 /usr/bin/bowtie2 --bowtieIndex index --sampleName "sample" --isColorspace $params.isColorspace --removePCRDuplicates $params.removePCRDuplicates --extraBowtieParams $params.extraBowtieParams --deleteIntermediateFiles $params.deleteIntermediateFiles
-  """
+  script:
+  if(params.isColorspace == "true" && params.isSingleEnd == "true" )
+      """
+      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x index -1 $params.mateA -Q $params.mateAQual > tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
+  else if(params.isColorspace == "true" && params.isSingleEnd == "false")
+      """
+      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x index -1 $params.mateA --Q1 $params.mateAQual -2 $params.mateB --Q2 $params.mateBQual > tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
+  else if(params.isColorspace == "false" && params.isSingleEnd == "true")
+      """
+      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x index -U $params.mateA -S tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
+  else if(params.isColorspace == "false" && params.isSingleEnd == "false")
+      """
+      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x index -1 $params.mateA -2 $params.mateB -S tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
 }
 
-process bowtieMappingSingle {
+process PCRDuplicates {
+  publishDir params.outputDir, mode: "copy", saveAs: { filename -> params.bamFile }
   input:
-  path 'mateA.fq'
-  path 'mateB.fq'
-  path 'mateA.fq.qual'
-  // Retaining names from the input into db_vch
-  path indexfiles
-  
+  path 'bamfile'
   output:
-  path 'runBowtieMapping.log' 
-  path '*.bam' 
-  path '*.sam' 
-
-  """
-  runBowtieMapping.pl --ma mateA.fq --mb mateB.fq --bowtie2 /usr/bin/bowtie2 --bowtieIndex index --sampleName $params.sampleName --isColorspace $params.isColorspace --removePCRDuplicates $params.removePCRDuplicates --extraBowtieParams $params.extraBowtieParams --deleteIntermediateFiles $params.deleteIntermediateFiles
-  """
+  path 'out.bam'
+  script:
+  if(params.removePCRDuplicates == "true")
+      """
+      samtools rmdup -S bamfile out.bam
+      """
+  else if(params.removePCRDuplicates == "false")
+      """
+      mv bamfile out.bam
+      """
 }
 
 workflow {
-  if (params.preformattedDatabase == "false") {
-  index_files = createIndex()
-    if(params.singleEnd == "false" ) {
-      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      mateB = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
-      results = bowtieMappingPaired(mateA, mateB, index_files)
-    }
-    if(params.singleEnd == "true" ) {
-      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      mateB = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      results = bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
-    }
-  } else if (params.preformattedDatabase == "true") {
-    index_files = file(params.databaseFileDir + "/*.bt2")
-    if(params.singleEnd == "false" ) {
-      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      mateB = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
-      results = bowtieMappingPaired(mateA, mateB, index_files)
-    }
-    if(params.singleEnd == "true" ) {
-      mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      mateB = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      results = bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
-    }
+  if(params.preconfiguredDatabase == "true") {
+    indexfiles = file(params.databaseFileDir + "/*.bt*")
+    bowtie(indexfiles) | PCRDuplicates
   }
-  results[0] | collectFile(storeDir: params.outputDir, name:params.logFile)
-  results[1] | collectFile(storeDir: params.outputDir, name:params.bamFile)
-  results[2] | collectFile(storeDir: params.outputDir, name:params.samFile)  
+  else if(params.preconfiguredDatabase == "false") {
+    indexfiles = createIndex()
+    bowtie(indexfiles) | PCRDuplicates
+  }
 }
