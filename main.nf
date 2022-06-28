@@ -11,8 +11,6 @@ process createIndex {
 }
 
 process bowtieMappingPaired {
-  publishDir params.outputDir, mode: 'copy', saveAs: {filename -> filename.endsWith(".sam") ? params.samFile : filename.endsWith(".log") ? params.logFile : filename }
-
   input:
   path 'mateA.fq' 
   path 'mateB.fq'
@@ -25,13 +23,11 @@ process bowtieMappingPaired {
   path '*.sam' optional true
 
   """
-  runBowtieMapping.pl --ma mateA.fq --mb mateB.fq --bowtie2 /usr/bin/bowtie2 --bowtieIndex index --sampleName $params.sampleName --isColorspace $params.isColorspace --removePCRDuplicates $params.removePCRDuplicates --extraBowtieParams $params.extraBowtieParams --deleteIntermediateFiles $params.deleteIntermediateFiles
+  runBowtieMapping.pl --ma mateA.fq --mb mateB.fq --bowtie2 /usr/bin/bowtie2 --bowtieIndex index --sampleName "sample" --isColorspace $params.isColorspace --removePCRDuplicates $params.removePCRDuplicates --extraBowtieParams $params.extraBowtieParams --deleteIntermediateFiles $params.deleteIntermediateFiles
   """
 }
 
 process bowtieMappingSingle {
-  publishDir params.outputDir, mode: 'copy'
-
   input:
   path 'mateA.fq'
   path 'mateB.fq'
@@ -55,24 +51,27 @@ workflow {
     if(params.singleEnd == "false" ) {
       mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
       mateB = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
-      bowtieMappingPaired(mateA, mateB, index_files)
+      results = bowtieMappingPaired(mateA, mateB, index_files)
     }
     if(params.singleEnd == "true" ) {
       mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
       mateB = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
+      results = bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
     }
   } else if (params.preformattedDatabase == "true") {
     index_files = file(params.databaseFileDir + "/*.bt2")
     if(params.singleEnd == "false" ) {
       mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
       mateB = Channel.fromPath(params.mateB).splitFasta( by:1, file:true  )
-      bowtieMappingPaired(mateA, mateB, index_files)
+      results = bowtieMappingPaired(mateA, mateB, index_files)
     }
     if(params.singleEnd == "true" ) {
       mateA = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
       mateB = channel.fromPath(params.mateA).splitFasta( by:1, file:true  )
-      bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
+      results = bowtieMappingSingle(mateA, mateB, params.mateAQual, index_files)
     }
   }
+  results[0] | collectFile(storeDir: params.outputDir, name:params.logFile)
+  results[1] | collectFile(storeDir: params.outputDir, name:params.bamFile)
+  results[2] | collectFile(storeDir: params.outputDir, name:params.samFile)  
 }
