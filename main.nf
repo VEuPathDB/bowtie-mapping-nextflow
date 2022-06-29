@@ -12,8 +12,7 @@ process bowtie {
   input:
   path indexfiles
   output:
-  path 'tmpOut.bam'
-  path 'tmpOut.sam'
+  path '*.bam'
   script:
   if(params.isColorspace == "true" && params.isSingleEnd == "true" )
       """
@@ -38,12 +37,11 @@ process bowtie {
 }
 
 process PCRDuplicates {
+  publishDir params.outputDir, mode: "copy", saveAs: { filename -> params.bamFile }
   input:
   path 'bamfile'
-  path 'samFile'
   output:
   path 'out.bam'
-  path 'samFile'
   script:
   if(params.removePCRDuplicates == "true")
       """
@@ -58,16 +56,10 @@ process PCRDuplicates {
 workflow {
   if(params.preconfiguredDatabase == "true") {
     indexfiles = file(params.databaseFileDir + "/*.bt*")
-    sambamfiles = bowtie(indexfiles)
-    results = PCRDuplicates(sambamfiles)
+    bowtie(indexfiles) | PCRDuplicates
   }
   else if(params.preconfiguredDatabase == "false") {
     indexfiles = createIndex()
-    sambamfiles = bowtie(indexfiles)
-    results = PCRDuplicates(sambamfiles)
-  }
-  results[0] | collectFile(storeDir: params.outputDir, name: params.bamFile)
-  if(params.returnSamFile == "true") {
-    results[1] | collectFile(storeDir: params.outputDir, name: params.samFile)
+    bowtie(indexfiles) | PCRDuplicates
   }
 }
