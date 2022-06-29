@@ -2,12 +2,21 @@ nextflow.enable.dsl=2
 
 process createIndex {
 
+  input:
+  path 'databaseFasta'
+
   output:
   path 'index.*'
 
-  """
-  createIndex.pl --isColorspace $params.isColorspace --bowtieIndex $params.databaseFasta --sampleName index
-  """
+  script:
+  if(params.isColorspace == "true")
+    """
+    bowtie-build databaseFasta index
+    """
+  else if(params.isColorspace == "false")
+    """
+    bowtie2-build databaseFasta index
+    """
 }
 
 process prepSRASingle {
@@ -109,7 +118,7 @@ workflow makeIndex {
       indexfiles = file(params.databaseFileDir + "/*.bt*")
     }
     else if(params.preconfiguredDatabase == "false") {
-      indexfiles = createIndex()
+      indexfiles = createIndex(params.databaseFasta)
     }
   emit:
       indexfiles

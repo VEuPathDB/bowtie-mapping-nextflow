@@ -15,8 +15,6 @@ RUN apt-get install -y \
   samtools \
   bedtools
 
-COPY /bin/* /usr/bin/
-
 RUN chmod +x *
 
 WORKDIR /work
