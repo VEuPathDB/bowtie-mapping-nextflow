@@ -9,5 +9,3 @@
      #+begin_example
      nextflow run VEuPathDB/bowtieMapping -with-trace -c  <config_file> -r main
      #+end_example
-     
-If you would like to specify single-end functionality, make sure that singleEnd is true, isColorspace is true and please specify mateB as the same path as mateA in the nextflow.config. This avoids a nextflow issue.
