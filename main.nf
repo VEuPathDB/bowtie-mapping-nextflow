@@ -9,11 +9,11 @@ process createIndex {
   path 'index.*'
 
   script:
-  if(params.isColorspace == "true")
+  if(params.isColorspace == true)
     """
     bowtie-build databaseFasta index
     """
-  else if(params.isColorspace == "false")
+  else if(params.isColorspace == false)
     """
     bowtie2-build databaseFasta index
     """
@@ -57,12 +57,12 @@ process bowtieSingle {
   path '*.bam'
 
   script:
-  if(params.isColorspace == "true" && params.isSingleEnd == "true" )
+  if(params.isColorspace == true && params.isSingleEnd == true )
       """
       bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x index -1 1.fastq -Q $params.mateAQual > tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
-  else if(params.isColorspace == "false" && params.isSingleEnd == "true")
+  else if(params.isColorspace == false && params.isSingleEnd == true)
       """
       bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x index -U $params.mateA -S tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
@@ -80,12 +80,12 @@ process bowtiePaired {
   path '*.bam'
 
   script:
-  if(params.isColorspace == "true" && params.isSingleEnd == "false")
+  if(params.isColorspace == true && params.isSingleEnd == false)
       """
       bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x index -1 mateA --Q1 $params.mateAQual -2 mateB --Q2 $params.mateBQual > tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
-  else if(params.isColorspace == "false" && params.isSingleEnd == "false")
+  else if(params.isColorspace == false && params.isSingleEnd == false)
       """
       bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x index -1 mateA -2 mateB -S tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
@@ -102,11 +102,11 @@ process PCRDuplicates {
   path 'out.bam'
 
   script:
-  if(params.removePCRDuplicates == "true")
+  if(params.removePCRDuplicates == true)
       """
       samtools rmdup -S bamfile out.bam
       """
-  else if(params.removePCRDuplicates == "false")
+  else if(params.removePCRDuplicates == false)
       """
       mv bamfile out.bam
       """
@@ -114,10 +114,10 @@ process PCRDuplicates {
 
 workflow makeIndex {
   main:
-    if(params.preconfiguredDatabase == "true") {
+    if(params.preconfiguredDatabase == true) {
       indexfiles = file(params.databaseFileDir + "/*.bt*")
     }
-    else if(params.preconfiguredDatabase == "false") {
+    else if(params.preconfiguredDatabase == false) {
       indexfiles = createIndex(params.databaseFasta)
     }
   emit:
@@ -127,20 +127,20 @@ workflow makeIndex {
 workflow processing {
   take: indexfiles
   main:
-    if(params.isSingleEnd == "true" && params.fromSRA == "true") {
+    if(params.isSingleEnd == true && params.fromSRA == true) {
       files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
       seqs = prepSRASingle(files)
       bowtieSingle(indexfiles,seqs) | PCRDuplicates
     }
-    else if(params.isSingleEnd == "false" && params.fromSRA == "true") {
+    else if(params.isSingleEnd == false && params.fromSRA == true) {
       files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
       seqs = prepSRAPaired(files)
       bowtiePaired(indexfiles, seqs[0], seqs[1]) | PCRDuplicates
     }
-    else if(params.isSingleEnd == "true" && params.fromSRA == "false") {
+    else if(params.isSingleEnd == true && params.fromSRA == false) {
       bowtieSingle(indexfiles, params.mateA, params.mateB) | PCRDuplicates
     }
-    else if(params.isSingleEnd == "false" && params.fromSRA == "false") {
+    else if(params.isSingleEnd == false && params.fromSRA == false) {
       bowtiePaired(indexfiles, params.mateA, params.mateB) | PCRDuplicates
     }
 }
