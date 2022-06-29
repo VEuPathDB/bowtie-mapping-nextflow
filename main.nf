@@ -1,29 +1,37 @@
 nextflow.enable.dsl=2
 
 process createIndex {
+
   output:
   path 'index.*'
+
   """
   createIndex.pl --isColorspace $params.isColorspace --bowtieIndex $params.databaseFasta --sampleName index
   """
 }
 
 process prepSRASingle {
+
   input:
   tuple val(genomeName), path(genomeReads) 
+
   output:
   path '*1.fastq'
+
   """
   gzip -d --force $genomeReads 
   """ 
 }
 
 process prepSRAPaired {
+
   input:
   tuple val(genomeName), path(genomeReads) 
+
   output:
   path '*1.fastq'
   path '*2.fastq'
+
   """
   gzip -d --force ${genomeReads[0]} 
   gzip -d --force ${genomeReads[1]} 
@@ -31,11 +39,14 @@ process prepSRAPaired {
 }
 
 process bowtieSingle {
+
   input:
   path indexfiles
   path '1.fastq'
+
   output:
   path '*.bam'
+
   script:
   if(params.isColorspace == "true" && params.isSingleEnd == "true" )
       """
@@ -50,12 +61,15 @@ process bowtieSingle {
 }
 
 process bowtiePaired {
+
   input:
   path indexfiles
   path 'mateA'
   path 'mateB'
+
   output:
   path '*.bam'
+
   script:
   if(params.isColorspace == "true" && params.isSingleEnd == "false")
       """
@@ -71,10 +85,13 @@ process bowtiePaired {
 
 process PCRDuplicates {
   publishDir params.outputDir, mode: "copy", saveAs: { filename -> params.bamFile }
+
   input:
   path 'bamfile'
+
   output:
   path 'out.bam'
+
   script:
   if(params.removePCRDuplicates == "true")
       """
@@ -102,21 +119,21 @@ workflow processing {
   take: indexfiles
   main:
     if(params.isSingleEnd == "true" && params.fromSRA == "true") {
-    files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
-    seqs = prepSRASingle(files)
-    bowtieSingle(indexfiles,seqs) | PCRDuplicates
-  }
-  else if(params.isSingleEnd == "false" && params.fromSRA == "true") {
-    files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
-    seqs = prepSRAPaired(files)
-    bowtiePaired(indexfiles, seqs[0], seqs[1]) | PCRDuplicates
-  }
-  else if(params.isSingleEnd == "true" && params.fromSRA == "false") {
-    bowtieSingle(indexfiles, params.mateA, params.mateB) | PCRDuplicates
-  }
-  else if(params.isSingleEnd == "false" && params.fromSRA == "false") {
-    bowtiePaired(indexfiles, params.mateA, params.mateB) | PCRDuplicates
-  }
+      files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
+      seqs = prepSRASingle(files)
+      bowtieSingle(indexfiles,seqs) | PCRDuplicates
+    }
+    else if(params.isSingleEnd == "false" && params.fromSRA == "true") {
+      files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
+      seqs = prepSRAPaired(files)
+      bowtiePaired(indexfiles, seqs[0], seqs[1]) | PCRDuplicates
+    }
+    else if(params.isSingleEnd == "true" && params.fromSRA == "false") {
+      bowtieSingle(indexfiles, params.mateA, params.mateB) | PCRDuplicates
+    }
+    else if(params.isSingleEnd == "false" && params.fromSRA == "false") {
+      bowtiePaired(indexfiles, params.mateA, params.mateB) | PCRDuplicates
+    }
 }
 
 workflow { 
