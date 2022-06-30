@@ -9,11 +9,11 @@ process createIndex {
   path 'index.*'
 
   script:
-  if(params.isColorspace == true)
+  if(params.isColorspace)
     """
     bowtie-build databaseFasta index
     """
-  else if(params.isColorspace == false)
+  else
     """
     bowtie2-build databaseFasta index
     """
@@ -57,12 +57,12 @@ process bowtieSingle {
   path '*.bam'
 
   script:
-  if(params.isColorspace == true && params.isSingleEnd == true )
+  if(params.isColorspace)
       """
       bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x $index -1 1.fastq -Q $params.mateAQual > tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
-  else if(params.isColorspace == false && params.isSingleEnd == true)
+  else
       """
       bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x $index -U $params.mateA -S tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
@@ -80,12 +80,12 @@ process bowtiePaired {
   path '*.bam'
 
   script:
-  if(params.isColorspace == true && params.isSingleEnd == false)
+  if(params.isColorspace)
       """
       bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x $index -1 mateA --Q1 $params.mateAQual -2 mateB --Q2 $params.mateBQual > tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
-  else if(params.isColorspace == false && params.isSingleEnd == false)
+  else
       """
       bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x $index -1 mateA -2 mateB -S tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
@@ -102,23 +102,23 @@ process PCRDuplicates {
   path 'out.*'
 
   script:
-  if(params.removePCRDuplicates == true && params.writeBedFile == true)
+  if(params.removePCRDuplicates  && params.writeBedFile)
       """
       samtools rmdup -S bamfile out.bam
       samtools index out.bam
       bedtools bamutobed -i out.bam > output.bed
       """
-  else if(params.removePCRDuplicates == true && params.writeBedFile == false)
+  else if(params.removePCRDuplicates && !params.writeBedFile)
       """
       samtools rmdup -S bamfile out.bam
       """
-  else if(params.removePCRDuplicates == false && params.writeBedFile == true)
+  else if(!params.removePCRDuplicates && params.writeBedFile)
       """
       mv bamfile out.bam
       samtools index out.bam
       bedtools bamtobed -i out.bam > out.bed
       """
-  else if(params.removePCRDuplicates == false && params.writeBedFile == false)
+  else
       """
       mv bamfile out.bam
       """
@@ -126,11 +126,11 @@ process PCRDuplicates {
 
 workflow makeIndex {
   main:
-    if(params.preconfiguredDatabase == true) {
+    if(params.preconfiguredDatabase) {
       indexfiles = file(params.databaseFileDir + "/*.bt*")
       indexFileBasename = params.indexFileBasename
     }
-    else if(params.preconfiguredDatabase == false) {
+    else {
       indexfiles = createIndex(params.databaseFasta)
       indexFileBasename = "index"
     }
@@ -144,20 +144,20 @@ workflow processing {
     indexfiles
     indexFileBasename
   main:
-    if(params.isSingleEnd == true && params.fromSRA == true) {
+    if(params.isSingleEnd && params.fromSRA) {
       files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
       seqs = prepSRASingle(files)
       bowtieSingle(indexfiles,seqs, indexFileBasename) | PCRDuplicates
     }
-    else if(params.isSingleEnd == false && params.fromSRA == true) {
+    else if(!params.isSingleEnd && params.fromSRA) {
       files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
       seqs = prepSRAPaired(files)
       bowtiePaired(indexfiles, seqs[0], seqs[1], indexFileBasename) | PCRDuplicates
     }
-    else if(params.isSingleEnd == true && params.fromSRA == false) {
+    else if(params.isSingleEnd && !params.fromSRA) {
       bowtieSingle(indexfiles, params.mateA, indexFileBasename) | PCRDuplicates
     }
-    else if(params.isSingleEnd == false && params.fromSRA == false) {
+    else {
       bowtiePaired(indexfiles, params.mateA, params.mateB, indexFileBasename) | PCRDuplicates
     }
 }
