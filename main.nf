@@ -93,20 +93,32 @@ process bowtiePaired {
 }
 
 process PCRDuplicates {
-  publishDir params.outputDir, mode: "copy", saveAs: { filename -> params.bamFile }
+  publishDir params.outputDir, mode: "copy"
 
   input:
   path 'bamfile'
 
   output:
-  path 'out.bam'
+  path 'out.*'
 
   script:
-  if(params.removePCRDuplicates == true)
+  if(params.removePCRDuplicates == true && params.writeBedFile == true)
+      """
+      samtools rmdup -S bamfile out.bam
+      samtools index out.bam
+      bedtools bamutobed -i out.bam > output.bed
+      """
+  else if(params.removePCRDuplicates == true && params.writeBedFile == false)
       """
       samtools rmdup -S bamfile out.bam
       """
-  else if(params.removePCRDuplicates == false)
+  else if(params.removePCRDuplicates == false && params.writeBedFile == true)
+      """
+      mv bamfile out.bam
+      samtools index out.bam
+      bedtools bamtobed -i out.bam > out.bed
+      """
+  else if(params.removePCRDuplicates == false && params.writeBedFile == false)
       """
       mv bamfile out.bam
       """

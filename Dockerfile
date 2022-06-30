@@ -14,7 +14,7 @@ RUN apt-get install -y \
   bowtie=1.3.1-1 \
   samtools=1.13-4 \
   bedtools=2.30.0+dfsg-2
-
+  
 RUN chmod +x *
 
 WORKDIR /work
