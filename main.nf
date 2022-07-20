@@ -19,78 +19,95 @@ process createIndex {
     """
 }
 
-process prepSRASingle {
+
+process prepSRA {
 
   input:
-  tuple val(genomeName), path(genomeReads) 
+  tuple val(genomeName), path(genomeReads)
 
   output:
-  path '*1.fastq'
+  tuple val(sample), path("${sample}**.fastq")
 
   """
-  gzip -d --force $genomeReads 
+  gzip -d --force *.fastq.gz
   """ 
 }
 
-process prepSRAPaired {
 
-  input:
-  tuple val(genomeName), path(genomeReads) 
-
-  output:
-  path '*1.fastq'
-  path '*2.fastq'
-
-  """
-  gzip -d --force ${genomeReads[0]} 
-  gzip -d --force ${genomeReads[1]} 
-  """
-}
-
-process bowtieSingle {
+process bowtieSRA {
 
   input:
   path indexfiles
-  path '1.fastq'
+  tuple val(sample), path(readsFastq)
   val index
+
   output:
   path '*.bam'
 
   script:
-  if(params.isColorspace)
+  if(params.isColorspace && params.isSingleEnd)
       """
-      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x $index -1 1.fastq -Q $params.mateAQual > tmpOut.sam
+      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' \
+      -x $index -1 ${readsFastQ} -Q $params.mateAQual > tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
-  else
+  else if(!params.isColorspace && params.isSingleEnd)
       """
-      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x $index -U $params.mateA -S tmpOut.sam
+      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' \
+      -x $index -U ${readsFastq} -S tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
+  else if(params.isColorspace && !params.isSingleEnd)
+      """
+      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' \
+      -x $index -1 ${sample}_1.fastq --Q1 $params.mateAQual -2 ${sample}_2.fastq --Q2 $params.mateBQual > tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
+  else if(!params.isColorspace && !params.isSingleEnd)
+      """
+      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' \
+      -x $index -1 ${sample}_1.fastq -2 ${sample}_2.fastq -S tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
 }
 
-process bowtiePaired {
+
+process bowtieLocal {
 
   input:
   path indexfiles
-  path 'mateA'
-  path 'mateB'
   val index
+
   output:
   path '*.bam'
 
   script:
-  if(params.isColorspace)
+  if(params.isColorspace && params.isSingleEnd)
       """
-      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' -x $index -1 mateA --Q1 $params.mateAQual -2 mateB --Q2 $params.mateBQual > tmpOut.sam
+      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' \
+      -x $index -1 $params.mateA -Q $params.mateAQual > tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
-  else
+  else if(!params.isColorspace && params.isSingleEnd)
       """
-      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x $index -1 mateA -2 mateB -S tmpOut.sam
+      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' \
+      -x $index -U $params.mateA -S tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
+  else if(params.isColorspace && !params.isSingleEnd)
+      """
+      bowtie -f -C -a -S -n 3 --best --strata --sam-RG 'ID:EuP' --sam-RG 'SM:TU114' --sam-RG 'PL:Illumina' \
+      -x $index -1 $params.mateA --Q1 $params.mateAQual -2 $params.mateB --Q2 $params.mateBQual > tmpOut.sam
+      samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
+      """
+  else if(!params.isColorspace && !params.isSingleEnd)
+      """
+      bowtie2 --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' \
+      -x $index -1 $params.mateA -2 $params.mateB -S tmpOut.sam
       samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
       """
 }
+
 
 process PCRDuplicates {
   publishDir params.outputDir, mode: "copy"
@@ -144,21 +161,13 @@ workflow processing {
     indexfiles
     indexFileBasename
   main:
-    if(params.isSingleEnd && params.fromSRA) {
+    if(params.fromSRA) {
       files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
-      seqs = prepSRASingle(files)
-      bowtieSingle(indexfiles,seqs, indexFileBasename) | PCRDuplicates
-    }
-    else if(!params.isSingleEnd && params.fromSRA) {
-      files = channel.fromSRA( params.sraID, apiKey: params.apiKey, protocol: "http" )
-      seqs = prepSRAPaired(files)
-      bowtiePaired(indexfiles, seqs[0], seqs[1], indexFileBasename) | PCRDuplicates
-    }
-    else if(params.isSingleEnd && !params.fromSRA) {
-      bowtieSingle(indexfiles, params.mateA, indexFileBasename) | PCRDuplicates
+      seqs = prepSRA(files)
+      bowtieSRA(indexfiles,seqs,indexFileBasename) | PCRDuplicates
     }
     else {
-      bowtiePaired(indexfiles, params.mateA, params.mateB, indexFileBasename) | PCRDuplicates
+      bowtieLocal(indexfiles, indexFileBasename) | PCRDuplicates
     }
 }
 
