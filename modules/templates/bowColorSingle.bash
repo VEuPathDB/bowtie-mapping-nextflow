@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
 bowtie \
   -f -C -a -S -n 3 \
   --best \
