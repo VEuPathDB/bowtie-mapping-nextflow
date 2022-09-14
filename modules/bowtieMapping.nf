@@ -1,6 +1,5 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
-import nextflow.splitter.CsvSplitter
 
 
 process createIndex {
@@ -82,9 +81,10 @@ workflow makeIndex {
       indexfiles = createIndex(params.databaseFasta)
       indexFileBasename = "index"
     }
+
   emit:
-      indexfiles
-      indexFileBasename
+    indexfiles
+    indexFileBasename
 }
 
 workflow sra {
@@ -92,6 +92,7 @@ workflow sra {
     indexfiles
     indexFileBasename
     accessions
+
   main:
     ids = Channel.fromList( accessions )
     files = downloadFiles( ids )
@@ -103,6 +104,7 @@ workflow local {
     indexfiles
     indexFileBasename
     files
+
   main:
     bowtie( indexfiles, files, indexFileBasename ) | PCRDuplicates
 }
@@ -110,6 +112,7 @@ workflow local {
 workflow bowtieMapping {
   take:
     accessions
+
   main:
     makeIndex()
     if(params.downloadMethod == 'sra') {
