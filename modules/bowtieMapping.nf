@@ -115,10 +115,10 @@ workflow bowtieMapping {
 
   main:
     makeIndex()
-    if(params.downloadMethod == 'sra') {
+    if(params.downloadMethod.toLowerCase() == 'sra') {
       sra(makeIndex.out, accessions)
     }
-    else if(params.downLoadMethod == 'local') {
+    else if(params.downLoadMethod.toLowerCase() == 'local') {
       local(makeIndex.out, accessions)
     }
 }

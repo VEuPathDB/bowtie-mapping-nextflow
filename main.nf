@@ -32,10 +32,10 @@ if(!params.preconfiguredDatabase && !params.databaseFasta) {
   throw new Exception("Missing params.databaseFasta")
 }
 
-if(params.downloadMethod == 'sra') {
+if(params.downloadMethod.toLowerCase() == 'sra') {
   accessions = fetchRunAccessions( params.studyIdFile )
 }
-else if(params.downloadMethod == 'local') {
+else if(params.downloadMethod.toLowerCase() == 'local') {
   files = Channel.fromFilePairs( params.localFileLocation + "/*_{1,2}.fa*" )
 }
 else {
@@ -53,7 +53,7 @@ include { bowtieMapping } from './modules/bowtieMapping.nf'
 //--------------------------------------------------------------------------
 
 workflow {
-  if(params.downloadMethod == 'sra')
+  if(params.downloadMethod.toLowerCase() == 'sra')
     bowtieMapping(accessions)
   else {
     bowtieMapping(files)
