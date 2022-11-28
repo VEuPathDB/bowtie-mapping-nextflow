@@ -33,10 +33,10 @@ if(!params.preconfiguredDatabase && !params.databaseFasta) {
 }
 
 if(params.downloadMethod.toLowerCase() == 'sra') {
-  accessions = fetchRunAccessions( params.studyIdFile )
+  accessions = fetchRunAccessions( params.input )
 }
 else if(params.downloadMethod.toLowerCase() == 'local') {
-  files = Channel.fromFilePairs( params.localFileLocation + "/*_{1,2}.fa*" )
+  files = Channel.fromFilePairs( params.input + "/*_{1,2}.fa*" )
 }
 else {
   throw new Exception("Invalid value for params.downloadMethod")
