@@ -34,7 +34,7 @@ flowchart TD
     p4 --> p5
 ```
 
-Decription of nextflow configuration parameters:
+Description of nextflow configuration parameters:
 
 | param         | value type        | description  |
 | ------------- | ------------- | ------------ |
