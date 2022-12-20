@@ -12,9 +12,18 @@ RUN apt-get update && \
     bowtie=1.3.1-1 \
     samtools=1.13-4 \
     bedtools=2.30.0+dfsg-2 \
-    sra-toolkit \
   && rm -rf /var/lib/apt/lists/*
-  
+
+RUN wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.0.0/sratoolkit.3.0.0-ubuntu64.tar.gz \
+    && tar -xvzf sratoolkit.3.0.0-ubuntu64.tar.gz
+
+ENV PATH=$PATH:/usr/bin/sratoolkit.3.0.0-ubuntu64/bin
+
+RUN mkdir -p /root/.ncbi
+RUN printf '/LIBS/GUID = "%s"\n' `uuidgen` > /root/.ncbi/user-settings.mkfg
+RUN printf '/libs/cloud/report_instance_identity = "true"\n' >> /root/.ncbi/user-settings.mkfg
+RUN printf '/libs/cloud/accept_aws_charges = "false"\n/libs/cloud/accept_gcp_charges = "false"\n' >> /root/.ncbi/user-settings.mkfg
+
 RUN chmod +x *
 
 WORKDIR /work
