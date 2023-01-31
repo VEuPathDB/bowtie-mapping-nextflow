@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 process createIndex {
   input:
-    path 'databaseFasta'
+    path databaseFasta
 
   output:
     path 'index.*'
@@ -54,7 +54,7 @@ process PCRDuplicates {
   publishDir params.outputDir, mode: "copy"
 
   input:
-    path 'bamfile'
+    path bamfile
 
   output:
     path 'out.*'
