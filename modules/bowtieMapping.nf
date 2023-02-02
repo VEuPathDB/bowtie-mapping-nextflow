@@ -5,15 +5,13 @@ nextflow.enable.dsl=2
 process createIndex {
   input:
     path databaseFasta
-
+    val isColorSpace
+    
   output:
     path 'index.*'
 
   script:
-    if(params.isColorspace)
-      template 'createIndexColor.bash'
-    else
-      template 'createIndexNoColor.bash'
+    template 'createIndex.bash'
 }
 
 
@@ -34,19 +32,14 @@ process bowtie {
     path indexfiles
     tuple val(sample), path(readsFastq)
     val index
+    val isColorSpace
+    val isSingleEnd
 
   output:
     path '*.bam'
 
   script:
-    if(params.isColorspace && params.isSingleEnd)
-      template 'bowColorSingle.bash'
-    else if(!params.isColorspace && params.isSingleEnd)
-      template 'bowNoColorSingle.bash'
-    else if(params.isColorspace && !params.isSingleEnd)
-      template 'bowColorPaired.bash'
-    else if(!params.isColorspace && !params.isSingleEnd)
-      template 'bowNoColorPaired.bash'
+    template 'bowtie.bash'
 }
 
 
@@ -55,19 +48,14 @@ process PCRDuplicates {
 
   input:
     path bamfile
+    val removePCRDuplicates
+    val writeBedFile
 
   output:
     path 'out.*'
 
   script:
-    if(params.removePCRDuplicates  && params.writeBedFile)
-      template 'pcrRemBed.bash'
-    else if(params.removePCRDuplicates && !params.writeBedFile)
-      template 'pcrRemNoBed.bash'
-    else if(!params.removePCRDuplicates && params.writeBedFile)
-      template 'pcrNoRemBed.bash'
-    else
-      template 'pcrNoRemNoBed.bash'
+    template 'pcrDuplicates.bash'
 }
 
 
@@ -78,7 +66,7 @@ workflow makeIndex {
       indexFileBasename = params.indexFileBasename
     }
     else {
-      indexfiles = createIndex(params.databaseFasta)
+      indexfiles = createIndex(params.databaseFasta, params.isColorSpace)
       indexFileBasename = "index"
     }
 
@@ -96,7 +84,8 @@ workflow sra {
   main:
     ids = Channel.fromList( accessions )
     files = downloadFiles( ids )
-    bowtie( indexfiles, files, indexFileBasename ) | PCRDuplicates
+    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.isSingleEnd ) 
+    PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile)
 }
 
 workflow local {
@@ -106,7 +95,8 @@ workflow local {
     files
 
   main:
-    bowtie( indexfiles, files, indexFileBasename ) | PCRDuplicates
+    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.isSingleEnd )
+    PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile)
 }
 
 workflow bowtieMapping {
