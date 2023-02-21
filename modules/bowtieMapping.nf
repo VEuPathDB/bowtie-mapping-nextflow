@@ -44,12 +44,15 @@ process bowtie {
 
 
 process PCRDuplicates {
-  publishDir params.outputDir, mode: "copy"
+  publishDir "$params.outputDir", pattern: "*.bam", mode: "copy", saveAs: { filename -> "${sampleName}.bam" }
+  publishDir "$params.outputDir", pattern: "*.bam.bai", mode: "copy", saveAs: { filename -> "${sampleName}.bam.bai" }
+  publishDir "$params.outputDir", pattern: "*.bed", mode: "copy", saveAs: { filename -> "${sampleName}.bed" }
 
   input:
     path bamfile
     val removePCRDuplicates
     val writeBedFile
+    val sampleName
 
   output:
     path 'out.*'
@@ -85,7 +88,7 @@ workflow sra {
     ids = Channel.fromList( accessions )
     files = downloadFiles( ids )
     bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.hasPairedReads ) 
-    PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile)
+    PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile, params.sampleName)
 }
 
 workflow local {
@@ -96,7 +99,7 @@ workflow local {
 
   main:
     bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.hasPairedReads )
-    PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile)
+    PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile, params.sampleName)
 }
 
 workflow bowtieMapping {
