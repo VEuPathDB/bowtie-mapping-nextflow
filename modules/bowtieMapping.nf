@@ -33,7 +33,7 @@ process bowtie {
     tuple val(sample), path(readsFastq)
     val index
     val isColorSpace
-    val isSingleEnd
+    val hasPairedReads
 
   output:
     path '*.bam'
@@ -84,7 +84,7 @@ workflow sra {
   main:
     ids = Channel.fromList( accessions )
     files = downloadFiles( ids )
-    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.isSingleEnd ) 
+    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.hasPairedReads ) 
     PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile)
 }
 
@@ -95,7 +95,7 @@ workflow local {
     files
 
   main:
-    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.isSingleEnd )
+    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.hasPairedReads )
     PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile)
 }
 
