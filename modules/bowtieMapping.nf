@@ -26,18 +26,51 @@ process downloadFiles {
 }
 
 
-process bowtie {
+process bowtieFromLocalSingle {
   input:
     path indexfiles
-    tuple val(sample), path(readsFastq)
+    path mateA
     val index
     val hasPairedReads
+    val extraBowtieParams
 
   output:
     path '*.bam'
 
   script:
-    template 'bowtie.bash'
+    template 'bowtieFromLocalSingle.bash'
+}
+
+process bowtieFromLocalPaired {
+  input:
+    path indexfiles
+    path mateA
+    path mateB
+    val index
+    val hasPairedReads
+    val extraBowtieParams
+
+  output:
+    path '*.bam'
+
+  script:
+    template 'bowtieFromLocalPaired.bash'
+}
+
+
+process bowtieFromSra {
+  input:
+    path indexfiles
+    tuple val(sample), path(readsFastq)
+    val index
+    val hasPairedReads
+    val extraBowtieParams
+
+  output:
+    path '*.bam'
+
+  script:
+    template 'bowtieFromSra.bash'
 }
 
 
@@ -85,7 +118,7 @@ workflow sra {
   main:
     ids = Channel.fromList( accessions )
     files = downloadFiles( ids )
-    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.hasPairedReads ) 
+    bowtieResults = bowtieFromSra( indexfiles, files, indexFileBasename, params.hasPairedReads, params.extraBowtieParams ) 
     PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile, params.sampleName)
 }
 
@@ -93,10 +126,15 @@ workflow local {
   take:
     indexfiles
     indexFileBasename
-    files
+    file
 
   main:
-    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.hasPairedReads )
+    if (params.hasPairedReads) {
+      bowtieResults = bowtieFromLocalPaired( indexfiles, file, params.mateB, indexFileBasename, params.hasPairedReads, params.extraBowtieParams )
+    }
+    else {
+      bowtieResults = bowtieFromLocalSingle( indexfiles, file, indexFileBasename, params.hasPairedReads, params.extraBowtieParams )
+    }
     PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile, params.sampleName)
 }
 
