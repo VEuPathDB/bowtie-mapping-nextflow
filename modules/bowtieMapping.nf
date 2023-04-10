@@ -5,7 +5,6 @@ nextflow.enable.dsl=2
 process createIndex {
   input:
     path databaseFasta
-    val isColorSpace
     
   output:
     path 'index.*'
@@ -32,7 +31,6 @@ process bowtie {
     path indexfiles
     tuple val(sample), path(readsFastq)
     val index
-    val isColorSpace
     val hasPairedReads
 
   output:
@@ -69,7 +67,7 @@ workflow makeIndex {
       indexFileBasename = params.indexFileBasename
     }
     else {
-      indexfiles = createIndex(params.databaseFasta, params.isColorSpace)
+      indexfiles = createIndex(params.databaseFasta)
       indexFileBasename = "index"
     }
 
@@ -87,7 +85,7 @@ workflow sra {
   main:
     ids = Channel.fromList( accessions )
     files = downloadFiles( ids )
-    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.hasPairedReads ) 
+    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.hasPairedReads ) 
     PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile, params.sampleName)
 }
 
@@ -98,7 +96,7 @@ workflow local {
     files
 
   main:
-    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.isColorSpace, params.hasPairedReads )
+    bowtieResults = bowtie( indexfiles, files, indexFileBasename, params.hasPairedReads )
     PCRDuplicates(bowtieResults, params.removePCRDuplicates, params.writeBedFile, params.sampleName)
 }
 

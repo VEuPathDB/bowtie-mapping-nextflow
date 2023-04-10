@@ -9,7 +9,6 @@ RUN apt-get update && \
     wget \
     perl \
     bowtie2=2.4.4-1 \
-    bowtie=1.3.1-1 \
     samtools=1.13-4 \
     bedtools=2.30.0+dfsg-2 \
   && rm -rf /var/lib/apt/lists/*
