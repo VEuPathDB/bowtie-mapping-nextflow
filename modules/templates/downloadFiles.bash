@@ -7,6 +7,6 @@ if [ -s $HOME/.ncbi/user-settings.mkfg ]
 then
     fasterq-dump --split-3 ${id}
 else
-    cp /root/.ncbi/user-settings.mkfg $HOME/.ncbi/user-setting.mkfg
+    cp /usr/bin/user-settings.mkfg $HOME/.ncbi/user-setting.mkfg
     fasterq-dump --split-3 ${id}
 fi
