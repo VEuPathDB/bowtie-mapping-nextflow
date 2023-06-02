@@ -25,6 +25,6 @@ RUN printf '/libs/cloud/accept_aws_charges = "false"\n/libs/cloud/accept_gcp_cha
 
 RUN chmod +x *
 
-cp /root/.ncbi/user-setting.mkfg /usr/bin/
+RUN cp /root/.ncbi/user-settings.mkfg /usr/bin/user-settings.mkfg
 
 WORKDIR /work
