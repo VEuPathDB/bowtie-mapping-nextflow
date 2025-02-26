@@ -13,7 +13,7 @@ process samtools {
  
     input:
     path sampleSam
-    val sample_id
+    tuple val(sample_id)
 
     output:
     path "${sample_id}.bam"
@@ -140,7 +140,7 @@ workflow {
           .map { row -> [row.sample, file(row.fastq_1), file(row.fastq_2),row.replicate,row.antibody,file(row.control),row.control_replicate] }
 
     samFilePE = alignBowtie2PE (reads, "$projectDir/data", params.index)
-    bamFile = samtools(samFilePE, sample_id)
+    bamFile = samtools(samFilePE, reads)
     }
 
     else {
@@ -150,7 +150,7 @@ workflow {
         .map { row -> [row.sample, file(row.fastq_1)] }
     
     samFileSE = alignBowtie2SE (reads, "$projectDir/data", params.index)
-    bamFile = samtools(samFileSE, $sample_id)
+    bamFile = samtools(samFileSE, reads)
     }
 
 //    Peaks = callPeaks(bamFile, ControlBamFile, sample_id)
