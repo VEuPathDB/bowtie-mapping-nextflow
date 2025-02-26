@@ -5,6 +5,7 @@ nextflow.enable.dsl=2
 params.genomeFasta = "${projectDir}/data/genome.fasta"
 params.csv = "${projectDir}/data/samplesheet.csv"
 params.paired = false
+params.index = "index"
 
 process samtools {
     publishDir "${projectDir}/results", mode: 'copy'
@@ -129,7 +130,7 @@ process alignBowtie2SE {
 workflow {
 
     // Run bowtie2-build on the genomeFasta file
-    bowtieDB = bowtie2Index(params.genomeFasta)
+    bowtieDB = bowtie2Index(params.genomeFasta, params.index)
 
     if (params.paired) {
 
