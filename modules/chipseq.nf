@@ -12,8 +12,9 @@ process samtools {
     container "quay.io/biocontainers/samtools:1.20--h50ea8bc_0"
  
     input:
-    path sampleSam
+    file sampleSam
     tuple val(sample_id)
+    val foo
 
     output:
     path "${sample_id}.bam"
