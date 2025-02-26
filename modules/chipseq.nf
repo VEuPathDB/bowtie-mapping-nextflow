@@ -7,7 +7,7 @@ params.csv = "${projectDir}/data/samplesheet.csv"
 params.paired = false
 
 process samtools {
-    publishDir "${projectDir}/data", mode: 'copy'
+    publishDir "${projectDir}/results", mode: 'copy'
     container "quay.io/biocontainers/samtools:1.20--h50ea8bc_0"
  
     input:
@@ -27,7 +27,7 @@ process samtools {
   
 process bowtie2Index {
     container "quay.io/biocontainers/bowtie2:2.5.4--he96a11b_5"
-    publishDir "$projectDir/data", mode: 'copy'
+    publishDir "$projectDir/results", mode: 'copy'
 
     input:
     path genomeFasta
@@ -126,7 +126,7 @@ workflow {
 
     if (params.paired) {
 
-    // Define the input channel from samplesheet.csv file
+    // Define the input channel from samplesheet.csv file, sample_id in reads list
       reads = Channel.fromPath(params.csv)
           .splitCsv(header: true)
           .map { row -> [row.sample, file(row.fastq_1), file(row.fastq_2),row.replicate,row.antibody,file(row.control),row.control_replicate] }
@@ -136,6 +136,7 @@ workflow {
     }
 
     else {
+// single end data, input channel with only one fastq and run alignBowtie2SE
       reads = Channel.fromPath(params.csv)
 	.splitCsv(header: true)
         .map { row -> [row.sample, file(row.fastq_1)] }
