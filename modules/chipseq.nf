@@ -61,7 +61,7 @@ process alignBowtie2PE {
 
   script:
   """
-  bowtie2 -x $dbName  -1 $reads_1 -2 $reads_2 -S "${sample_id}.sam}"
+  bowtie2 -x "${bowtieDB}/${dbName}"  -1 $reads_1 -2 $reads_2 -S "${sample_id}.sam}"
   """
 }
 
@@ -81,7 +81,7 @@ process alignBowtie2SE {
     
   script:
   """
-  bowtie2 -x $dbName  -U $reads_1 -S "${sample_id}.sam}"
+  bowtie2 -x "${bowtieDB}/${dbName}"  -U $reads_1 -S "${sample_id}.sam}"
   """
 }
 
@@ -139,7 +139,7 @@ workflow {
           .splitCsv(header: true)
           .map { row -> [row.sample, file(row.fastq_1), file(row.fastq_2),row.replicate,row.antibody,file(row.control),row.control_replicate] }
 
-    samFilePE = alignBowtie2PE (reads, bowtieDB)
+    samFilePE = alignBowtie2PE (reads, "$projectDir/data", params.index)
     bamFile = samtools(samFilePE, sample_id)
     }
 
@@ -149,7 +149,7 @@ workflow {
 	.splitCsv(header: true)
         .map { row -> [row.sample, file(row.fastq_1)] }
     
-    samFileSE = alignBowtie2SE (reads, bowtieDB)
+    samFileSE = alignBowtie2SE (reads, "$projectDir/data", params.index)
     bamFile = samtools(samFileSE, $sample_id)
     }
 
