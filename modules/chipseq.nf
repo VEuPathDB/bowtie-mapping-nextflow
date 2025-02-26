@@ -53,7 +53,9 @@ process alignBowtie2PE {
   val dbName
 
   output:
+  val $sample_id
   path "${sample_id}.sam"
+ 
 
   script:
   """
@@ -72,6 +74,7 @@ process alignBowtie2SE {
   val dbName
     
   output:  
+  val $sample_id
   path "${sample_id}.sam"  
     
   script:
@@ -106,7 +109,7 @@ process alignBowtie2SE {
 //      deeptools bamCoverage -b $bamFile  -o "${sample_id}.bw"
 
 
-process callPeaks {
+//process callPeaks {
 //    container "quay.io/biocontainers/macs3"
 //    publishDir "$projectDir/results", mode: 'copy'
 //    input:
@@ -132,7 +135,7 @@ workflow {
           .map { row -> [row.sample, file(row.fastq_1), file(row.fastq_2),row.replicate,row.antibody,file(row.control),row.control_replicate] }
 
     samFilePE = alignBowtie2PE (reads, bowtieDB)
-    bamFile = samtools(samFilePE)
+    bamFile = samtools(samFilePE, sample_id)
     }
 
     else {
@@ -142,7 +145,7 @@ workflow {
         .map { row -> [row.sample, file(row.fastq_1)] }
     
     samFileSE = alignBowtie2SE (reads, bowtieDB)
-    bamFile = samtools(samFileSE)
+    bamFile = samtools(samFileSE, $sample_id)
     }
 
 //    Peaks = callPeaks(bamFile, ControlBamFile, sample_id)
