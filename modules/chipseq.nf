@@ -15,13 +15,14 @@ process samtools {
     val sample_id
 
     output:
-//    tuple (path("${sample_id}.bam"), path("${sample_id}.bam.bai"))
     path "${sample_id}.bam"
     path "${sample_id}.bam.bai"
 
     script:
+    """
     samtools view -bS $sampleSam | samtools sort - -o "${sample_id}.bam"
     samtools index "${sample_id}.bam"
+    """
 }
 
   
@@ -93,9 +94,10 @@ process alignBowtie2SE {
 //	  val sample_id
 //    output: 
 //	  "${sample_id}_compare.bw"
-//    script:
+//    	script:
+//	"""
 //	  deeptools bamCompare -b1 $bamFile -b2 $controlBamFile -o "${sample_id}_compare.bw"
-
+//	"""
 
 //process bamCoverage {   
 //    container "quay.io/biocontainers/deeptools"
@@ -106,8 +108,9 @@ process alignBowtie2SE {
 //    output:
 //      "${sample_id}.bw"
 //    script:
+//	"""
 //      deeptools bamCoverage -b $bamFile  -o "${sample_id}.bw"
-
+//	"""
 
 //process callPeaks {
 //    container "quay.io/biocontainers/macs3"
@@ -119,8 +122,9 @@ process alignBowtie2SE {
 //    output:
 //      "${sample_id}_*.*
 //    script:
+//	"""
 //      macs3 callpeak -t $bamFile -c $controlBamFile -n $sample_id
-
+//	"""
 
 workflow {
 
