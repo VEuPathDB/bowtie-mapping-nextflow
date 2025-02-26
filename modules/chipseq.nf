@@ -55,7 +55,6 @@ process alignBowtie2PE {
   val dbName
 
   output:
-  val $sample_id
   path "${sample_id}.sam"
  
 
@@ -76,7 +75,6 @@ process alignBowtie2SE {
   val dbName
     
   output:  
-  val $sample_id
   path "${sample_id}.sam"  
     
   script:
