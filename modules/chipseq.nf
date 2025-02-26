@@ -29,7 +29,7 @@ process samtools {
   
 process bowtie2Index {
     container "quay.io/biocontainers/bowtie2:2.5.4--he96a11b_5"
-    publishDir "$projectDir/results", mode: 'copy'
+    publishDir "$projectDir/data", mode: 'copy'
 
     input:
     path genomeFasta
