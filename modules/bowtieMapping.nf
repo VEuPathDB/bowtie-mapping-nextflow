@@ -44,8 +44,7 @@ process bowtieFromLocalSingle {
 process bowtieFromLocalPaired {
   input:
     path indexfiles
-    path mateA
-    path mateB
+    tuple val(sampleName), path(sampleFile)
     val index
     val hasPairedReads
     val extraBowtieParams
@@ -94,18 +93,21 @@ process PCRDuplicates {
 
 
 workflow makeIndex {
+  take:
+    preconfiguredDatabase
+
   main:
-    if(params.preconfiguredDatabase) {
-      indexfiles = file( params.databaseFileDir + "/*.bt*" )
+    if(preconfiguredDatabase) {
+      indexFiles = file( params.databaseFileDir + "/*.bt*" )
       indexFileBasename = params.indexFileBasename
     }
     else {
-      indexfiles = createIndex(params.databaseFasta)
+      indexFiles = createIndex(params.databaseFasta)
       indexFileBasename = "index"
     }
 
   emit:
-    indexfiles
+    indexFiles
     indexFileBasename
 }
 
@@ -130,7 +132,7 @@ workflow local {
 
   main:
     if (params.hasPairedReads) {
-      bowtieResults = bowtieFromLocalPaired( indexfiles, file, params.mateB, indexFileBasename, params.hasPairedReads, params.extraBowtieParams )
+      bowtieResults = bowtieFromLocalPaired( indexfiles, file, indexFileBasename, params.hasPairedReads, params.extraBowtieParams )
     }
     else {
       bowtieResults = bowtieFromLocalSingle( indexfiles, file, indexFileBasename, params.hasPairedReads, params.extraBowtieParams )
@@ -143,11 +145,11 @@ workflow bowtieMapping {
     accessions
 
   main:
-    makeIndex()
+    makeIndexResults = makeIndex(params.preconfiguredDatabase)
     if(params.downloadMethod.toLowerCase() == 'sra') {
-      sra(makeIndex.out, accessions)
+      sra(makeIndexResults.indexFiles, makeIndexFiles.indexFileBasename, accessions)
     }
     else if(params.downloadMethod.toLowerCase() == 'local') {
-      local(makeIndex.out, accessions)
+      local(makeIndexResults.indexFiles, makeIndexResults.indexFileBasename, accessions)
     }
 }

@@ -35,8 +35,11 @@ if(!params.preconfiguredDatabase && !params.databaseFasta) {
 if(params.downloadMethod.toLowerCase() == 'sra') {
   accessions = fetchRunAccessions( params.input )
 }
-else if(params.downloadMethod.toLowerCase() == 'local') {
-  file = channel.fromPath(params.mateA)
+else if(params.downloadMethod.toLowerCase() == 'local' && !params.hasPairedReads) {
+  file = channel.fromPath([params.inputDir + '*_1.fastq'])
+}
+else if(params.downloadMethod.toLowerCase() == 'local' && params.hasPairedReads) {
+  file = Channel.fromFilePairs([params.inputDir + '*_{1,2}.fastq'])
 }
 else {
   throw new Exception("Invalid value for params.downloadMethod")
