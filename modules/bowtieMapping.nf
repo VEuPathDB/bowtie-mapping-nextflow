@@ -3,6 +3,8 @@ nextflow.enable.dsl=2
 
 
 process createIndex {
+  container = 'veupathdb/bowtiemapping:v1.0.0'
+  
   input:
     path databaseFasta
     
@@ -15,6 +17,8 @@ process createIndex {
 
 
 process downloadFiles {
+  container = 'veupathdb/bowtiemapping:v1.0.0'
+
   input:
     val id
     
@@ -27,6 +31,8 @@ process downloadFiles {
 
 
 process bowtieFromLocalSingle {
+  container = 'veupathdb/bowtiemapping:v1.0.0'
+
   input:
     path indexfiles
     path mateA
@@ -42,6 +48,8 @@ process bowtieFromLocalSingle {
 }
 
 process bowtieFromLocalPaired {
+  container = 'veupathdb/bowtiemapping:v1.0.0'
+
   input:
     path indexfiles
     path mateA
@@ -59,6 +67,8 @@ process bowtieFromLocalPaired {
 
 
 process bowtieFromSra {
+  container = 'veupathdb/bowtiemapping:v1.0.0'
+
   input:
     path indexfiles
     tuple val(sample), path(readsFastq)
@@ -75,6 +85,8 @@ process bowtieFromSra {
 
 
 process PCRDuplicates {
+  container = 'veupathdb/bowtiemapping:v1.0.0'
+
   publishDir "$params.outputDir", pattern: "*.bam", mode: "copy", saveAs: { filename -> "${sampleName}.bam" }
   publishDir "$params.outputDir", pattern: "*.bam.bai", mode: "copy", saveAs: { filename -> "${sampleName}.bam.bai" }
   publishDir "$params.outputDir", pattern: "*.bed", mode: "copy", saveAs: { filename -> "${sampleName}.bed" }
