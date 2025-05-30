@@ -72,6 +72,9 @@ process removePCRDuplicates {
 process indexBam {
     container = 'veupathdb/bowtiemapping:1.0.0'
 
+    publishDir "$params.outputDir", pattern: "*.bam", mode: 'copy',saveAs: { filename -> params.saveAlignments ? "${meta.id}.bam" : null }
+    publishDir "$params.outputDir", pattern: "*.bai", mode: 'copy',saveAs: { filename -> params.saveAlignments ? "${meta.id}.bam.bai" : null }
+
     input:
     tuple val(meta), path(bam, name: "output.bam")
 
@@ -99,9 +102,9 @@ workflow bowtieMapping {
 
         if(params.hasPairedReads && row[2]) {
             fasta2 = file(row[2])
-            return [ [id: row[0], strand: row[3] ], [fasta1, fasta2] ]
+            return [ [id: row[0], ref: row[3] ], [fasta1, fasta2] ]
         }
-        return [ [id: row[0], strand: row[3] ], [fasta1] ]
+        return [ [id: row[0], ref: row[3] ], [fasta1] ]
     }
 
     index = createIndex(params.genome)

@@ -7,8 +7,7 @@ process bamCompare {
     publishDir "$params.outputDir", pattern: "*.bw", mode: "copy", saveAs: { filename -> "${meta.id}_vs_${refMeta.id}.bw" }
 
     input:
-    tuple val(meta), path(bam), path(bai)
-    tuple val(refMeta), path(refBam, name: 'reference.bam'), path(refBai, name: 'reference.bam.bai')
+    tuple val(meta), path(bam), path(bai), val(refMeta), path(refBam, name: 'reference.bam'), path(refBai, name: 'reference.bam.bai')
 
     output:
     tuple val(meta), path('ratio.bw')
