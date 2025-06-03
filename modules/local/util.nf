@@ -20,3 +20,22 @@ process chromSizes {
 }
 
 
+process indexGff {
+  container = 'biocontainers/tabix:v1.9-11-deb_cv1'
+
+  publishDir params.outputDir, mode: 'copy'
+
+  input:
+    path gff
+
+  output:
+    path '*.gz'
+    path '*.gz.tbi'
+
+  script:
+  """
+  sort -k1,1 -k4,4n $gff > ${params.gffFileName}
+  bgzip ${params.gffFileName}
+  tabix -p gff ${params.gffFileName}.gz
+  """
+}
