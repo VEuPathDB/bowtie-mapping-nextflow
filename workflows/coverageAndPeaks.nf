@@ -22,23 +22,34 @@ workflow coverageAndPeaks {
 
     bamCompare(pairs)
 
+    browserConfigsRatio = bamCompare.out.map { v -> v[2] }
+    browserConfigsRatio.collectFile(name: "metadata_ratios", storeDir: params.outputDir)
+
     chromSizesRes = chromSizes(params.genome)
 
     if(params.datasetType == "chipSeq") {
 
+        // mnase
         if(params.experimentType ==  "mnase") {
             danpos(bam)
 
             if(params.saveCoverage) {
                 wigToBigWig(danpos.out, chromSizesRes)
+
+                browserConfigs = wigToBigWig.out.map { v -> v[2] }
+                browserConfigs.collectFile(name: "metadata_unlogged", storeDir: params.outputDir)
             }
         }
+        // histonemod, tfbinding, faire, dnase
         else {
 
             homerTagDir = homerMakeTagDir(bam)
             if(params.saveCoverage) {
                 bed = homer2Bed(homerTagDir)
                 bedgraph2bigwig(bed, chromSizesRes)
+
+                browserConfigs = bedgraph2bigwig.out.map { v -> v[2] }
+                browserConfigs.collectFile(name: "metadata_unlogged", storeDir: params.outputDir)
             }
 
             // only call peaks for histonemod experiments and samples with input
@@ -55,4 +66,7 @@ workflow coverageAndPeaks {
             }
         }
     }
+
+    
+    
 }

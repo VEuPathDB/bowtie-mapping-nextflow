@@ -12,11 +12,12 @@ process bedgraph2bigwig {
     path sizes
 
     output:
-    path "${meta.id}.bw"
+    tuple val(meta), path("${meta.id}.bw"), path("browserConfig")
 
     script:
     """
     bedGraphToBigWig $bed $sizes ${meta.id}.bw
+    makeBrowserConfig.bash ${meta.id} ${meta.id}.bw unique Coverage >browserConfig
     """
 
 }
@@ -31,11 +32,12 @@ process wigToBigWig {
     path(chromSizes)
 
     output:
-    path "${meta.id}.bw"
+    tuple val(meta), path("${meta.id}.bw"), path("browserConfig")
 
     script:
     """
     wigToBigWig -clip $wig $chromSizes ${meta.id}.bw
+    makeBrowserConfig.bash ${meta.id} ${meta.id}.bw unique Coverage >browserConfig
     """
 
 }
