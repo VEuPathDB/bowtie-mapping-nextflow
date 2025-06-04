@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 
 process homerMakeTagDir {
-    container "jbrestel/bowtie"
+    container = 'veupathdb/bowtiemapping:1.0.0'
 
     input:
     tuple val(meta), path(bam), path(bai)
@@ -23,7 +23,7 @@ process homerMakeTagDir {
 }
 
 process homer2Bed {
-    container "jbrestel/bowtie"
+    container = 'veupathdb/bowtiemapping:1.0.0'
 
     input:
     tuple val(meta), path(homerTagDir)
@@ -45,7 +45,7 @@ process homer2Bed {
 
 
 process homerFindPeaks_histonemod {
-    container "jbrestel/bowtie"
+    container = 'veupathdb/bowtiemapping:1.0.0'
 
     publishDir params.outputDir, mode: 'copy', pattern: "*_peaks.txt"
     
