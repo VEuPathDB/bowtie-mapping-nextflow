@@ -1,0 +1,3 @@
+sample,fastq_1,fastq_2,strand
+BF_H3_input,trim_BF_H3_input_1.fastq,trim_BF_H3_input_2.fastq,
+BF_H3_ChIP,trim_BF_H3_ChIP_1.fastq,trim_BF_H3_ChIP_2.fastq,BF_H3_input

@@ -1,0 +1,4 @@
+sample,fastq_1,fastq_2,input
+earlyS,trim_earlyS_1.fastq,trim_earlyS_2.fastq,G2
+G2,trim_G2_ref_1.fastq,trim_G2_ref_2.fastq,
+lateS,trim_lateS_1.fastq,trim_lateS_2.fastq,G2

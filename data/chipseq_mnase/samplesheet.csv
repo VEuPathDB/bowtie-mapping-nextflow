@@ -1,0 +1,3 @@
+sample,fastq_1,fastq_2,input
+MAINE0,trim_MAINE0.fastq,,
+MAINE12,trim_MAINE12.fastq,,

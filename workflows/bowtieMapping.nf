@@ -98,10 +98,24 @@ workflow bowtieMapping {
         .splitCsv( skip:1)
 
     sample_ch = samples.map { row ->
-        fasta1 = file(row[1]);
+
+        def fasta1;
+        if (row[1].startsWith("/")) {
+            fasta1 = file(row[1]);
+        }
+        else {
+            fasta1 = file(params.input + "/" + row[1])
+        }
 
         if(params.hasPairedReads && row[2]) {
-            fasta2 = file(row[2])
+            def fasta2;
+            if (row[2].startsWith("/")) {
+                fasta2 = file(row[2]);
+            }
+            else {
+                fasta2 = file(params.input + "/" + row[2])
+            }
+
             return [ [id: row[0], ref: row[3] ], [fasta1, fasta2] ]
         }
         return [ [id: row[0], ref: row[3] ], [fasta1] ]
