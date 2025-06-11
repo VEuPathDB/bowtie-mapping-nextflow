@@ -43,7 +43,7 @@ process bowtie2 {
     }
     
     """
-    bowtie2 ${fileTypeArg} --rg-id EuP --rg 'SM:TU114' --rg 'PL:Illumina' -x index ${readsArg} -S tmpOut.sam ${task.ext.args}
+    bowtie2 ${fileTypeArg} -x index ${readsArg} -S tmpOut.sam ${task.ext.args}
     samtools view -buS tmpOut.sam | samtools sort -o tmpOut.bam
     """
 }
