@@ -13,12 +13,9 @@ process bamCompare {
     tuple val(meta), path("${meta.id}_vs_${refMeta.id}.bw"), path("browserConfig")
     
     script:
-    def binSize = 50
-    if(task.ext.binSize) {
-        binSize = {task.ext.binSize};
-    }
+    def binSize = task.ext.binSize ?: 50
     """
-    bamCompare --binSize $binSize -b1 $bam -b2 reference.bam --operation ratio -o ${meta.id}_vs_${refMeta.id}.bw
+    bamCompare --binSize ${binSize} -b1 ${bam} -b2 reference.bam --operation ratio -o ${meta.id}_vs_${refMeta.id}.bw
     makeBrowserConfig.bash ${meta.id}_vs_${refMeta.id} ${meta.id}_vs_${refMeta.id}.bw unique "Coverage Ratio" >browserConfig
     """
     
