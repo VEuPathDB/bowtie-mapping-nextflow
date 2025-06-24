@@ -62,6 +62,6 @@ process homerFindPeaks_histonemod {
     }
     """
     findPeaks $homerTagDir -style histone -o auto -i $inputHomerTagDir $fragLengthArg
-    parseHomerRegions.pl --sample ${meta.id} --inputFile ${homerTagDir}/regions.txt --outputGff ${meta.id}_peaks.gff --outputTab ${meta.id}_peaks.txt --outputConfig ${meta.id}.config
+    parseHomerRegions.pl --sample ${meta.id} --inputFile ${homerTagDir}/regions.txt --outputGff ${meta.id}_peaks.gff --outputTab ${meta.id}_peaks.txt --outputConfig ${meta.id}.config --profileSetName $params.profileSetName
     """
 }
