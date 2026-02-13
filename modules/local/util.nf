@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 
 process chromSizes {
-    container = 'veupathdb/bowtiemapping:1.0.0'
+    container 'veupathdb/bowtiemapping:1.0.0'
 
     input:
     path(genome)
@@ -21,7 +21,7 @@ process chromSizes {
 
 
 process indexGff {
-  container = 'biocontainers/tabix:v1.9-11-deb_cv1'
+  container 'biocontainers/tabix:v1.9-11-deb_cv1'
 
   publishDir params.outputDir, mode: 'copy'
 

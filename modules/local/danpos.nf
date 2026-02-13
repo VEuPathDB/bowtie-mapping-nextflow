@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 
 process danpos {
-    container = 'biocontainers/danpos:v2.2.2_cv3'
+    container 'biocontainers/danpos:v2.2.2_cv3'
 
     input:
     tuple val(meta), path(bam), path(bai)

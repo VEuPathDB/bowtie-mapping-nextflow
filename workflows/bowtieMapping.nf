@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 
 process createIndex {
-    container = 'veupathdb/bowtiemapping:1.0.0'
+    container 'veupathdb/bowtiemapping:1.0.0'
 
     input:
     path fasta
@@ -21,7 +21,7 @@ process createIndex {
 
 
 process bowtie2 {
-    container = 'veupathdb/bowtiemapping:1.0.0'
+    container 'veupathdb/bowtiemapping:1.0.0'
 
     input:
     path index
@@ -50,7 +50,7 @@ process bowtie2 {
 
 
 process removePCRDuplicates {
-    container = 'veupathdb/bowtiemapping:1.0.0'
+    container 'veupathdb/bowtiemapping:1.0.0'
 
 //    publishDir "$params.outputDir", pattern: "*.bam", mode: "copy", saveAs: { filename -> "${sampleName}.bam" }
 //    publishDir "$params.outputDir", pattern: "*.bam.bai", mode: "copy", saveAs: { filename -> "${sampleName}.bam.bai" }
@@ -70,7 +70,7 @@ process removePCRDuplicates {
 
 
 process indexBam {
-    container = 'veupathdb/bowtiemapping:1.0.0'
+    container 'veupathdb/bowtiemapping:1.0.0'
 
     publishDir "$params.outputDir", pattern: "*.bam", mode: 'copy',saveAs: { filename -> params.saveAlignments ? "${meta.id}.bam" : null }
     publishDir "$params.outputDir", pattern: "*.bai", mode: 'copy',saveAs: { filename -> params.saveAlignments ? "${meta.id}.bam.bai" : null }
