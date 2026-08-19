@@ -1,64 +1,64 @@
-THIS REPO IS 🚧 UNDER CONSTRUCTION 🚧 and NOT Used in ANY production CODE
-# bowtieMapping
+# bowtie-mapping-nextflow
 
-***<p align=center>bowtieMapping (From sra download)</p>***  
-```mermaid
-flowchart TD
-    p0((Channel.fromList))
-    p1[bowtieMapping:sra:downloadFiles]
-    p2(( ))
-    p3(( ))
-    p4[bowtieMapping:sra:bowtie]
-    p5[bowtieMapping:sra:PCRDuplicates]
-    p6(( ))
-    p0 -->|ids| p1
-    p1 --> p4
-    p2 -->|indexfiles| p4
-    p3 -->|indexFileBasename| p4
-    p4 --> p5
-    p5 --> p6
+A Nextflow pipeline that aligns short reads to a reference genome with Bowtie2 and derives coverage tracks and, for ChIP-seq histone modification data, called peaks.
+
+## Overview
+
+This pipeline covers the common short-read mapping and signal-generation steps used across several VEuPathDB genomic data types: origins-of-replication profiling, splice-site read mapping, and ChIP-seq (histone modification, transcription factor binding, MNase, FAIRE, and DNase experiments). Samples are aligned to a reference genome with Bowtie2, optionally deduplicated, and then compared against a paired reference/input sample with `deeptools bamCompare` to produce ratio coverage tracks. For ChIP-seq datasets, the pipeline additionally builds HOMER tag directories (or, for MNase data, runs DANPOS) to generate coverage bigWigs, and — for histone modification experiments with a matched input sample — calls peaks with HOMER and indexes the results as a tabix-indexed GFF for loading into VEuPathDB's genome browser and study infrastructure.
+
+## Requirements
+
+- [Nextflow](https://www.nextflow.io/) (DSL2)
+- Docker or Singularity/Apptainer — processes run in the `veupathdb/bowtiemapping:1.0.0` image plus `quay.io/biocontainers/deeptools`, `quay.io/biocontainers/ucsc-bedgraphtobigwig`, `quay.io/biocontainers/ucsc-wigtobigwig`, `biocontainers/danpos`, and `biocontainers/tabix` (select the engine via the `docker` or `singularity` profile/config in `conf/`)
+
+## Usage
+
+```
+nextflow run VEuPathDB/bowtie-mapping-nextflow -r main \
+  --input /path/to/input \
+  --genome /path/to/genome.fasta \
+  --datasetType chipSeq \
+  --experimentType histonemod \
+  --inputFileType fastq \
+  --hasPairedReads true \
+  --removePCRDuplicates true \
+  --outputDir /path/to/output \
+  -C conf/docker.config \
+  -resume
 ```
 
-***<p align=center>bowtieMapping (from local files)</p>***  
-```mermaid
-flowchart TD
-    p0((Channel.fromFilePairs))
-    p1(( ))
-    p2(( ))
-    p3[bowtieMapping:local:bowtie]
-    p4[bowtieMapping:local:PCRDuplicates]
-    p5(( ))
-    p0 -->|files| p3
-    p1 -->|indexfiles| p3
-    p2 -->|indexFileBasename| p3
-    p3 --> p4
-    p4 --> p5
-```
+The pipeline has a single (default) entry point, made up of two chained sub-workflows:
 
-Description of nextflow configuration parameters:
+1. **`bowtieMapping`** — reads `params.input/<samplesheetFileName>`, builds a Bowtie2 index from `params.genome`, aligns each sample's reads with `bowtie2`, optionally removes PCR duplicates (`samtools rmdup`), and indexes the resulting BAM.
+2. **`coverageAndPeaks`** — pairs each sample with the reference/input sample named in its `ref` field, runs `deeptools bamCompare` to produce a ratio bigWig per pair, and then — when `datasetType` is `chipSeq` — either runs DANPOS (for `experimentType = mnase`) or builds HOMER tag directories and bedGraph/bigWig coverage tracks (for `histonemod`, `tfbinding`, `faire`, `dnase`). For `experimentType = histonemod`, peaks are additionally called with HOMER `findPeaks` against the paired input sample and indexed as a tabix-compressed GFF.
 
-| param         | value type        | description  |
-| ------------- | ------------- | ------------ |
-| inputFilePath  | string | Path to input file |
-| outputDir | string | Path to where you would like output files stored |
-| databaseFasta | string | Path to the fasta file that you would like to use a the database for Psipred |
-| preconfiguredDatabase | boolean | Are you using a preconfigured database? |
-| writeBedFile | boolean | If you would like to output an additional bedfile. |
-| isSingleEnd | boolean | Is the data single-end or paired-end? |
-| isColorspace | boolean | Is the data colorspace data? |
-| removePCRDuplicates | boolean | Would you like PCR duplicates removed? |
-| input | path | Path to input tsv file if downloading from sra or path to directory holding input files |
-| downloadMethod | string | Either 'sra' or 'local' |
-| databaseFileDir | path | Path to database file dir|
-| indexFileBasename | string | Basename for bt2 files. Ex "index" if files start index.1.bt2, index.2.bt2, etc |
-| mateAQual | path | Path to qual file for mateA |
-| mateBQual | path | Path to qual fiel for mateB |
+### Samplesheet
 
-### Get Started
-  * Install Nextflow
-    
-    `curl https://get.nextflow.io | bash`
-  
-  * Run the script
-    
-    `nextflow run VEuPathDB/blastSimilarity -with-trace -c  <config_file> -r main`
+`params.input/<samplesheetFileName>` is a CSV (header row skipped) with columns: sample ID, read file 1, read file 2 (if paired), and reference/input sample ID (the `ref` column used to pair a sample with its control for `bamCompare` and peak calling). Read file paths are resolved relative to `params.input` unless given as absolute paths.
+
+## Key Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `input` | `$launchDir/input` | Directory containing the samplesheet and (relative) read files |
+| `samplesheetFileName` | `samplesheet.csv` | Samplesheet filename, resolved under `input` |
+| `genome` | `$launchDir/input/genome.fasta` | Reference genome FASTA used for the Bowtie2 index and chromosome sizes |
+| `datasetType` | — | Data type being processed: `originsOfReplication`, `spliceSites`, or `chipSeq` |
+| `experimentType` | — | For `chipSeq` datasets: `histonemod`, `tfbinding`, `mnase`, `faire`, or `dnase` |
+| `inputFileType` | — | `fastq` or `fasta`, passed to `bowtie2` as `-q`/`-f` |
+| `hasPairedReads` | `true` | Whether samples have paired-end (`-1`/`-2`) or single-end (`-U`) reads |
+| `removePCRDuplicates` | `false` | Whether to run `samtools rmdup` on alignments before downstream analysis |
+| `saveAlignments` | `false` | Publish indexed BAM/BAI files to `outputDir` |
+| `saveCoverage` | `false` | Publish bigWig coverage tracks to `outputDir` |
+| `profileSetName` | — | Profile set name written into browser track/peak config output for the study loader |
+| `gffFileName` | `output.gff` | Filename used for the sorted, tabix-indexed peaks GFF |
+| `outputDir` | `$launchDir/output` | Directory published output files are written to |
+
+## Output
+
+Depending on `datasetType`/`experimentType` and the `save*` flags, published to `outputDir`:
+
+- Indexed BAM alignments (`<sample>.bam`, `<sample>.bam.bai`) when `saveAlignments` is `true`
+- Ratio coverage bigWigs from `bamCompare` (`<sample>_vs_<ref>.bw`) and their browser track config, collected into `metadata_ratios`
+- For ChIP-seq data with `saveCoverage` enabled: unlogged coverage bigWigs (HOMER-derived bedGraph→bigWig for most experiment types, or DANPOS smoothed signal→bigWig for MNase), with browser track configs collected into `metadata_unlogged`
+- For `histonemod` experiments: called peaks per sample (`<sample>_peaks.txt`), a merged tabix-indexed peaks GFF (`<gffFileName>.gz` / `.gz.tbi`), and a collected `insert_study_results` config file for loading peak results
