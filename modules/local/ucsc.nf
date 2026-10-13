@@ -23,7 +23,7 @@ process bedgraph2bigwig {
 }
 
 process wigToBigWig {
-    container = "quay.io/biocontainers/ucsc-wigtobigwig:472--h664eb37_2"
+    container "quay.io/biocontainers/ucsc-wigtobigwig:472--h664eb37_2"
 
     publishDir params.outputDir, mode: 'copy'
 
